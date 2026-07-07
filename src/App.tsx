@@ -869,69 +869,76 @@ export default function App() {
           {/* ABA 2: LISTA DE REGRAS */}
           {activeTab === 'rules' && (
             <div className="space-y-6 animate-fade-in" id="panel_rules">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-lg text-neutral-200">Regras de Varredura</h3>
                   <p className="text-xs text-neutral-400">Radares ativos de AutoBuy e apenas monitoramento do mercado LZT</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleToggleAllRules(true)}
-                    className="bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-bold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer active:scale-95"
-                    title="Iniciar todos os radares pausados"
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    Iniciar Todos
-                  </button>
-                  <button
-                    onClick={() => handleToggleAllRules(false)}
-                    className="bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 font-bold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer active:scale-95"
-                    title="Pausar todos os radares rodando"
-                  >
-                    <Pause className="w-3.5 h-3.5" />
-                    Pausar Todos
-                  </button>
-                  <button
-                    id="btn_new_rule_body"
-                    onClick={() => {
-                      setEditingRuleId(null);
-                      setFormData({
-                        name: '',
-                        url: '',
-                        category: 'Valorant and League of Legends',
-                        mode: 'monitor',
-                        max_price: 15,
-                        interval_seconds: 15,
-                        max_purchases: 3
-                      });
-                      setIsModalOpen(true);
-                    }}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/5 active:scale-95"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nova Regra
-                  </button>
-                </div>
 
-                <div className="flex gap-1.5 bg-neutral-950 border border-neutral-800 p-1 rounded-lg mx-auto md:mx-0 self-end mt-4 md:mt-0">
-                  <button
-                    onClick={() => setRulesFilter('all')}
-                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setRulesFilter('active')}
-                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'active' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  >
-                    Ativos
-                  </button>
-                  <button
-                    onClick={() => setRulesFilter('paused')}
-                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  >
-                    Pausados
-                  </button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  {/* Filtro: Pílula Estilo Apple/Vercel (Segmented Control) */}
+                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md self-start sm:self-auto">
+                    <button
+                      onClick={() => setRulesFilter('all')}
+                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setRulesFilter('active')}
+                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'active' ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                      Ativos
+                    </button>
+                    <button
+                      onClick={() => setRulesFilter('paused')}
+                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                      Pausados
+                    </button>
+                  </div>
+
+                  <div className="w-px h-5 bg-neutral-800 hidden sm:block"></div>
+
+                  {/* Grupo de Ações Globais */}
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                    <button
+                      onClick={() => handleToggleAllRules(true)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                      title="Iniciar todos"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Iniciar Todos</span>
+                    </button>
+                    <button
+                      onClick={() => handleToggleAllRules(false)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                      title="Pausar todos"
+                    >
+                      <Pause className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Pausar Todos</span>
+                    </button>
+                    <button
+                      id="btn_new_rule_body"
+                      onClick={() => {
+                        setEditingRuleId(null);
+                        setFormData({
+                          name: '',
+                          url: '',
+                          category: 'Valorant and League of Legends',
+                          mode: 'monitor',
+                          max_price: 15,
+                          interval_seconds: 15,
+                          max_purchases: 3
+                        });
+                        setIsModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-white text-neutral-950 font-bold text-[11px] rounded-md transition-colors shadow-sm ml-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Nova Regra
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1039,8 +1046,8 @@ export default function App() {
                             <button
                               onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
                               className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer w-24 ${rule.enabled
-                                  ? 'text-neutral-400 hover:bg-red-500/10 hover:text-red-400'
-                                  : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                ? 'text-neutral-400 hover:bg-red-500/10 hover:text-red-400'
+                                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                                 }`}
                               title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
                             >
