@@ -43,7 +43,15 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/3] Instalando dependencias (pode demorar alguns segundos)...
-call npm install
+:: O parâmetro --no-audit previne travas desnecessárias
+call npm install --no-audit
+
+:: Verificando node_modules
+if not exist "node_modules\" (
+    echo [AVISO] Falha ao instalar dependencias. Tentando limpeza de cache...
+    call npm cache clean --force
+    call npm install --no-audit --legacy-peer-deps
+)
 
 echo [2/3] Iniciando o servidor...
 echo O app rodara em http://localhost:%PORT%
