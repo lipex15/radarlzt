@@ -73,7 +73,7 @@ interface Purchase {
   title: string;
   price: number;
   status: 'success' | 'failed' | 'simulated_success' | 'simulated_failed';
-  validation_status: 'success' | 'failed';
+  validation_status: 'success' | 'failed' | 'soft_error';
   message: string;
   account_data?: {
     login?: string;
@@ -629,15 +629,15 @@ async function checkRuleNow(id: string): Promise<void> {
       if (price <= monitor.max_price) {
         // Lógica contra duplicidade otimizada:
         // No modo monitor, só exibe 1 vez. No AutoBuy, ignora se já comprou com sucesso,
-        // Mas se tiver falhado (ex: 404 da API, erro de check), permite tentar novamente até 3 vezes!
+        // Mas se tiver falhado criticamente (ex: 404 API, Conta Banida), tenta até 3 vezes. Erros limpos (soft) retentam enquanto a conta estiver viva na busca.
         const alreadyAlerted = alerts.some(a => a.item_id === itemId);
         const alreadyBoughtSuccess = purchases.some(p => p.item_id === itemId && (p.status === 'success' || p.status === 'simulated_success'));
-        const failedAttempts = purchases.filter(p => p.item_id === itemId && p.status === 'failed').length;
+        const hardFailedAttempts = purchases.filter(p => p.item_id === itemId && p.validation_status === 'failed').length;
 
         if (monitor.mode === 'monitor' && alreadyAlerted) continue;
         if (monitor.mode === 'autobuy') {
           if (alreadyBoughtSuccess) continue; // Nunca recomprar conta que já deu success
-          if (failedAttempts >= 3) continue; // Desiste após 3 falhas de API na conta
+          if (hardFailedAttempts >= 3) continue; // Desiste após 3 falhas de INVALIDEZ (404, reprovada check).
         }
 
         matchingItemFound = true;
@@ -729,7 +729,7 @@ async function checkRuleNow(id: string): Promise<void> {
             title,
             price,
             status: buyResult.success ? 'success' : 'failed',
-            validation_status: buyResult.success ? 'success' : 'failed',
+            validation_status: buyResult.success ? 'success' : (buyResult.invalidOrDeleted ? 'failed' : 'soft_error'),
             message: buyResult.message,
             created_at: new Date().toISOString(),
           };
@@ -748,7 +748,7 @@ async function checkRuleNow(id: string): Promise<void> {
 
           // Se a conta for apagada ou der falha na checagem (inválida), "segue o baile" sem enviar erro no Discord
           if (buyResult.invalidOrDeleted) {
-            addLog('info', monitor.name, `Falha de validação/404 em ${itemId}. Tentativa ${failedAttempts + 1}/3 ignorada do Discord.`);
+            addLog('info', monitor.name, `Falha de validação/404 em ${itemId}. Tentativa ${hardFailedAttempts + 1}/3 ignorada do Discord.`);
             // Nós salvamos no log de histórico (purchases/alerts), mas não floodamos o Discord
           } else {
             // Enviar alerta do Discord de resultado para erros normais e success
