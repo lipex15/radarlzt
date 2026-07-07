@@ -119,11 +119,30 @@ export default function App() {
   const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
   const [logs, setLogs] = useState<SystemLog[]>([]);
 
-  const [collapsedRules, setCollapsedRules] = useState<Record<string, boolean>>({});
+  // Estado persistente dos cards colapsados
+  const [collapsedRules, setCollapsedRules] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('lzt_collapsedRules');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lzt_collapsedRules', JSON.stringify(collapsedRules));
+  }, [collapsedRules]);
 
   const toggleCollapseRule = (id: string) => {
     setCollapsedRules(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // State para o Filtro de Regras
+  const [rulesFilter, setRulesFilter] = useState<'all' | 'active' | 'paused'>(() => {
+    return (localStorage.getItem('lzt_rulesFilter') as any) || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lzt_rulesFilter', rulesFilter);
+  }, [rulesFilter]);
 
   // Estados de UI do Modal e Formulários
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -199,8 +218,12 @@ export default function App() {
       detectedCategory = 'Steam';
     } else if (urlLower.includes('telegram')) {
       detectedCategory = 'Telegram';
-    } else if (urlLower.includes('fortnite') || urlLower.includes('epic') || urlLower.includes('gta')) {
+    } else if (urlLower.includes('fortnite')) {
       detectedCategory = 'Fortnite';
+    } else if (urlLower.includes('epic') || urlLower.includes('epicgames')) {
+      detectedCategory = 'Epic Games';
+    } else if (urlLower.includes('socialclub') || urlLower.includes('gta')) {
+      detectedCategory = 'Social Club';
     } else if (urlLower.includes('origin') || urlLower.includes('ea')) {
       detectedCategory = 'EA Origin';
     } else if (urlLower.includes('discord')) {
@@ -404,6 +427,7 @@ export default function App() {
     'Roblox',
     'World of Tanks',
     'Epic Games',
+    'Social Club',
     'Discord',
     'TikTok',
     'Instagram',
@@ -888,6 +912,27 @@ export default function App() {
                     Nova Regra
                   </button>
                 </div>
+
+                <div className="flex gap-2 bg-neutral-900 border border-neutral-800 p-1 rounded-xl mx-auto md:mx-0 self-end mt-4 md:mt-0">
+                  <button
+                    onClick={() => setRulesFilter('all')}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => setRulesFilter('active')}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Ativos
+                  </button>
+                  <button
+                    onClick={() => setRulesFilter('paused')}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Pausados
+                  </button>
+                </div>
               </div>
 
               {rules.length === 0 ? (
@@ -910,133 +955,139 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {rules.map((rule) => (
-                    <div
-                      key={rule.id}
-                      className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 flex flex-col justify-between hover:border-neutral-700 transition-all relative overflow-hidden"
-                    >
-                      {/* Indicador superior de status */}
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <span className="text-[10px] bg-neutral-950 border border-neutral-800 px-2 py-0.5 rounded font-mono text-neutral-400">
-                            {rule.category}
-                          </span>
-                          <div className="flex items-center gap-2 pt-1">
-                            <h4 className="font-bold text-neutral-100 text-sm">{rule.name}</h4>
+                  {rules
+                    .filter((rule) => {
+                      if (rulesFilter === 'active') return rule.enabled;
+                      if (rulesFilter === 'paused') return !rule.enabled;
+                      return true;
+                    })
+                    .map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-neutral-700 transition-all relative overflow-hidden"
+                      >
+                        {/* Indicador superior de status */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <span className="text-[10px] bg-neutral-950 border border-neutral-800 px-2 py-0.5 rounded font-mono text-neutral-400">
+                              {rule.category}
+                            </span>
+                            <div className="flex items-center gap-2 pt-1">
+                              <h4 className="font-bold text-neutral-100 text-sm">{rule.name}</h4>
+                              <button
+                                onClick={() => toggleCollapseRule(rule.id)}
+                                className="text-neutral-500 hover:text-neutral-300 p-0.5 rounded transition-all cursor-pointer"
+                                title={collapsedRules[rule.id] ? "Expandir" : "Recolher"}
+                              >
+                                {collapsedRules[rule.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Badges de Status do Monitor */}
+                          <div className="flex flex-col items-end gap-1.5">
+                            {rule.enabled ? (
+                              <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                                {rule.status === 'checking' ? 'Buscando...' : rule.status === 'buying' ? 'Comprando...' : 'Ativo'}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] bg-neutral-950 border border-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
+                                Pausado
+                              </span>
+                            )}
+
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rule.mode === 'autobuy'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/10'
+                              : 'bg-blue-500/10 text-blue-400 border border-blue-500/10'
+                              }`}>
+                              {rule.mode === 'autobuy' ? 'AutoBuy' : 'Apenas Monitorar'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Resumo Técnico dos Filtros de URL */}
+                        {!collapsedRules[rule.id] && (
+                          <div className="bg-neutral-950 border border-neutral-800/50 p-3 rounded-xl space-y-2 my-4 text-xs animate-fade-in">
+                            <div className="flex justify-between items-center text-neutral-400">
+                              <span>Preço Teto:</span>
+                              <span className="font-bold text-neutral-200">R$ {rule.max_price.toFixed(2)} BRL</span>
+                            </div>
+                            <div className="flex justify-between items-center text-neutral-450 text-neutral-450 border-neutral-800/50">
+                              <span>Intervalo de Varredura:</span>
+                              <span className="font-mono text-neutral-300">{rule.interval_seconds}s</span>
+                            </div>
+                            {rule.mode === 'autobuy' && (
+                              <div className="flex justify-between items-center text-neutral-450 border-t border-neutral-905 pt-2">
+                                <span>Limite de Compras:</span>
+                                <span className="font-mono text-amber-400 font-bold">
+                                  {rule.purchases_made} de {rule.max_purchases} feitas
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-neutral-500 border-t border-neutral-905 pt-2">
+                              <span>Menor preço visto:</span>
+                              <span className="font-mono text-neutral-300 font-semibold">
+                                {rule.last_lowest_price ? `R$ ${rule.last_lowest_price.toFixed(2)}` : 'Sem registros'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Botões de Ação na base do card */}
+                        <div className="flex items-center justify-between border-t border-neutral-800/60 pt-4 mt-2">
+                          <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => toggleCollapseRule(rule.id)}
-                              className="text-neutral-500 hover:text-neutral-300 p-0.5 rounded transition-all cursor-pointer"
-                              title={collapsedRules[rule.id] ? "Expandir" : "Recolher"}
+                              onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
+                              className={`p-2 rounded-xl transition-all border cursor-pointer ${rule.enabled
+                                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                                }`}
+                              title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
                             >
-                              {collapsedRules[rule.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                              {rule.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                            </button>
+
+                            <button
+                              onClick={() => handleCheckRuleNow(rule.id, rule.name)}
+                              disabled={!rule.enabled}
+                              className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              title="Disparar Checagem Imediata"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+
+                            <a
+                              href={rule.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all"
+                              title="Abrir URL filtrada no LZT Market"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEdit(rule)}
+                              className="p-2 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-all cursor-pointer"
+                              title="Editar Regra"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteRule(rule.id, rule.name)}
+                              className="p-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
+                              title="Deletar Regra"
+                            >
+                              <Trash className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
 
-                        {/* Badges de Status do Monitor */}
-                        <div className="flex flex-col items-end gap-1.5">
-                          {rule.enabled ? (
-                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                              {rule.status === 'checking' ? 'Buscando...' : rule.status === 'buying' ? 'Comprando...' : 'Ativo'}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] bg-neutral-950 border border-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
-                              Pausado
-                            </span>
-                          )}
-
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rule.mode === 'autobuy'
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/10'
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/10'
-                            }`}>
-                            {rule.mode === 'autobuy' ? 'AutoBuy' : 'Apenas Monitorar'}
-                          </span>
-                        </div>
                       </div>
-
-                      {/* Resumo Técnico dos Filtros de URL */}
-                      {!collapsedRules[rule.id] && (
-                        <div className="bg-neutral-950 border border-neutral-800/50 p-3 rounded-xl space-y-2 my-4 text-xs animate-fade-in">
-                          <div className="flex justify-between items-center text-neutral-400">
-                            <span>Preço Teto:</span>
-                            <span className="font-bold text-neutral-200">R$ {rule.max_price.toFixed(2)} BRL</span>
-                          </div>
-                          <div className="flex justify-between items-center text-neutral-450 text-neutral-450 border-neutral-800/50">
-                            <span>Intervalo de Varredura:</span>
-                            <span className="font-mono text-neutral-300">{rule.interval_seconds}s</span>
-                          </div>
-                          {rule.mode === 'autobuy' && (
-                            <div className="flex justify-between items-center text-neutral-450 border-t border-neutral-905 pt-2">
-                              <span>Limite de Compras:</span>
-                              <span className="font-mono text-amber-400 font-bold">
-                                {rule.purchases_made} de {rule.max_purchases} feitas
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex justify-between items-center text-neutral-500 border-t border-neutral-905 pt-2">
-                            <span>Menor preço visto:</span>
-                            <span className="font-mono text-neutral-300 font-semibold">
-                              {rule.last_lowest_price ? `R$ ${rule.last_lowest_price.toFixed(2)}` : 'Sem registros'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Botões de Ação na base do card */}
-                      <div className="flex items-center justify-between border-t border-neutral-800/60 pt-4 mt-2">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
-                            className={`p-2 rounded-xl transition-all border cursor-pointer ${rule.enabled
-                              ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
-                              }`}
-                            title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
-                          >
-                            {rule.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                          </button>
-
-                          <button
-                            onClick={() => handleCheckRuleNow(rule.id, rule.name)}
-                            disabled={!rule.enabled}
-                            className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Disparar Checagem Imediata"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
-
-                          <a
-                            href={rule.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all"
-                            title="Abrir URL filtrada no LZT Market"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenEdit(rule)}
-                            className="p-2 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-all cursor-pointer"
-                            title="Editar Regra"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteRule(rule.id, rule.name)}
-                            className="p-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
-                            title="Deletar Regra"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
 
