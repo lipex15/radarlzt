@@ -175,7 +175,7 @@ function extractItemMetadata(item: any, category: string): any {
 
   const origin = item.origin ?? item.account_origin ?? item.item_origin ?? null;
   const email_linked = item.email_linked ?? item.item_email ?? null;
-  const email_domain = item.email_domain ?? item.mail_domain ?? item.email_type ?? null;
+  const email_domain = item.email_domain ?? item.mail_domain ?? item.login_domain ?? null;
   const phone_linked = item.phone_linked ?? item.phone_active ?? null;
   const country = item.country ?? item.account_country ?? null;
 
@@ -314,26 +314,30 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
     // Tentar detectar a categoria de jogo de forma elegante para o cabeçalho (LOL, Valorant, CS2, etc.)
     let gameCategory = alert.monitor_name.toUpperCase();
     const urlLower = alert.url.toLowerCase();
-    if (urlLower.includes('riot') || urlLower.includes('valorant') || urlLower.includes('lol') || urlLower.includes('league')) {
-      gameCategory = 'LOL';
+
+    // Escolhe a thumbnail dinamicamente com base no jogo para leitura rápida 10x
+    let gIcon = 'https://lzt.market/styles/lzt/logo.png';
+    let gColor = color;
+
+    if (urlLower.includes('riot') || urlLower.includes('valorant')) {
+      gameCategory = 'Valorant';
+      gIcon = 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Valorant_logo_-_pink_color_version.svg/512px-Valorant_logo_-_pink_color_version.svg.png';
+    } else if (urlLower.includes('lol') || urlLower.includes('league')) {
+      gameCategory = 'League of Legends';
+      gIcon = 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/League_of_Legends_2019_vector.svg/512px-League_of_Legends_2019_vector.svg.png';
     } else if (urlLower.includes('steam') || urlLower.includes('cs2') || urlLower.includes('csgo') || urlLower.includes('rust') || urlLower.includes('dota')) {
       gameCategory = 'Steam';
-    } else if (urlLower.includes('telegram')) {
-      gameCategory = 'Telegram';
+      gIcon = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/512px-Steam_icon_logo.svg.png';
     } else if (urlLower.includes('fortnite') || urlLower.includes('epic')) {
       gameCategory = 'Fortnite';
-    } else if (urlLower.includes('discord')) {
-      gameCategory = 'Discord';
+      gIcon = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png';
     }
-
-    // Formatação da descrição exatamente idêntica à fornecida na imagem de exemplo
-    const description = `**${gameCategory}**\nR$ ${alert.price.toFixed(2)} Zuza - ${alert.title}\n\n\`R$ ${alert.price.toFixed(2)} • ${statusText}\``;
 
     const timestampUnix = Math.floor(new Date(alert.found_at).getTime() / 1000);
 
     const fields: any[] = [
-      { name: '💰 Preço', value: `**R$ ${alert.price.toFixed(2)}**`, inline: true },
-      { name: '✅ Status', value: `${statusEmoji} ${statusText}`, inline: true },
+      { name: '💰 Preço', value: `\`R$ ${alert.price.toFixed(2)}\``, inline: true },
+      { name: '✅ Status', value: `\`${statusText}\``, inline: true },
       { name: '🕒 Encontrado', value: `<t:${timestampUnix}:R>`, inline: true }
     ];
 
@@ -345,57 +349,50 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
       const isSteam = catLower.includes('steam') || catLower.includes('cs') || catLower.includes('dota');
       const isFortnite = catLower.includes('fortnite');
 
+      // Helper syntax string capitalizer para clean UI ("stealer" -> "Stealer", "autoreg" -> "Autoreg")
+      const cap = (s: string) => typeof s === 'string' && s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
       if (isRiot) {
-        if (details.valorant_vp !== undefined && details.valorant_vp !== null) fields.push({ name: '💎 VP (Valorant Points)', value: `\`${details.valorant_vp}\``, inline: true });
-        if (details.valorant_rp !== undefined && details.valorant_rp !== null) fields.push({ name: '🔴 Radiant Points', value: `\`${details.valorant_rp}\``, inline: true });
+        if (details.valorant_vp !== undefined && details.valorant_vp !== null) fields.push({ name: '💎 VP', value: `\`${details.valorant_vp}\``, inline: true });
+        if (details.valorant_rp !== undefined && details.valorant_rp !== null) fields.push({ name: '🔴 Radianite', value: `\`${details.valorant_rp}\``, inline: true });
         if (details.valorant_rank !== undefined && details.valorant_rank !== null) fields.push({ name: '🏆 Rank Atual', value: `\`${details.valorant_rank}\``, inline: true });
-        if (details.prev_rank !== undefined && details.prev_rank !== null) fields.push({ name: '🎖️ Rank Anterior', value: `\`${details.prev_rank}\``, inline: true });
         if (details.knife_count !== undefined && details.knife_count !== null) fields.push({ name: '🔪 Facas', value: `\`${details.knife_count}\``, inline: true });
         if (details.skins_count !== undefined && details.skins_count !== null) fields.push({ name: '🎨 Skins', value: `\`${details.skins_count}\``, inline: true });
         if (details.server !== undefined && details.server !== null) fields.push({ name: '🌐 Região', value: `\`${details.server}\``, inline: true });
       } else if (isLoL) {
-        if (details.lol_level !== undefined && details.lol_level !== null) fields.push({ name: '⭐ Level LoL', value: `\`${details.lol_level}\``, inline: true });
-        if (details.lol_rank !== undefined && details.lol_rank !== null) fields.push({ name: '🏆 Rank LoL', value: `\`${details.lol_rank}\``, inline: true });
-        if (details.lol_winrate !== undefined && details.lol_winrate !== null) fields.push({ name: '📈 WinRate', value: `\`${details.lol_winrate}%\``, inline: true });
-        if (details.lol_be !== undefined && details.lol_be !== null) fields.push({ name: '🔵 Blue Essence', value: `\`${details.lol_be}\``, inline: true });
-        if (details.lol_oe !== undefined && details.lol_oe !== null) fields.push({ name: '🟠 Orange Essence', value: `\`${details.lol_oe}\``, inline: true });
-        if (details.lol_rp !== undefined && details.lol_rp !== null) fields.push({ name: '💎 RP', value: `\`${details.lol_rp}\``, inline: true });
-        if (details.lol_skins_count !== undefined && details.lol_skins_count !== null) fields.push({ name: '🎨 Skins LoL', value: `\`${details.lol_skins_count}\``, inline: true });
+        if (details.lol_level !== undefined && details.lol_level !== null) fields.push({ name: '⭐ Level', value: `\`${details.lol_level}\``, inline: true });
+        if (details.lol_rank !== undefined && details.lol_rank !== null) fields.push({ name: '🏆 Rank', value: `\`${details.lol_rank}\``, inline: true });
+        if (details.lol_skins_count !== undefined && details.lol_skins_count !== null) fields.push({ name: '🎨 Skins', value: `\`${details.lol_skins_count}\``, inline: true });
         if (details.lol_server !== undefined && details.lol_server !== null) fields.push({ name: '🌐 Região', value: `\`${details.lol_server}\``, inline: true });
       } else if (isSteam) {
-        if (details.steam_level !== undefined && details.steam_level !== null) fields.push({ name: '⭐ Steam Level', value: `\`${details.steam_level}\``, inline: true });
-        if (details.steam_games_count !== undefined && details.steam_games_count !== null) fields.push({ name: '🎮 Qtd Jogos', value: `\`${details.steam_games_count}\``, inline: true });
+        if (details.steam_level !== undefined && details.steam_level !== null) fields.push({ name: '⭐ Level', value: `\`${details.steam_level}\``, inline: true });
         if (details.cs2_rank !== undefined && details.cs2_rank !== null) fields.push({ name: '🏆 Rank CS2', value: `\`${details.cs2_rank}\``, inline: true });
-        if (details.cs2_skins_count !== undefined && details.cs2_skins_count !== null) fields.push({ name: '🎨 Skins CS2', value: `\`${details.cs2_skins_count}\``, inline: true });
-        if (details.hours !== undefined && details.hours !== null) fields.push({ name: '⏰ Horas CS2/Steam', value: `\`${details.hours}\``, inline: true });
+        if (details.cs2_skins_count !== undefined && details.cs2_skins_count !== null) fields.push({ name: '🎨 Skins', value: `\`${details.cs2_skins_count}\``, inline: true });
+        if (details.hours !== undefined && details.hours !== null) fields.push({ name: '⏰ Horas', value: `\`${details.hours}\``, inline: true });
       } else if (isFortnite) {
-        if (details.fortnite_skins !== undefined && details.fortnite_skins !== null) fields.push({ name: '🎨 Skins Fortnite', value: `\`${details.fortnite_skins}\``, inline: true });
+        if (details.fortnite_skins !== undefined && details.fortnite_skins !== null) fields.push({ name: '🎨 Skins', value: `\`${details.fortnite_skins}\``, inline: true });
         if (details.fortnite_vbucks !== undefined && details.fortnite_vbucks !== null) fields.push({ name: '🪙 V-Bucks', value: `\`${details.fortnite_vbucks}\``, inline: true });
-        if (details.fortnite_level !== undefined && details.fortnite_level !== null) fields.push({ name: '⭐ Level Fortnite', value: `\`${details.fortnite_level}\``, inline: true });
       }
 
       // Dados comuns do detector
-      if (details.level !== undefined && details.level !== null && !isLoL && !isRiot) fields.push({ name: '⭐ Level Conta', value: String(details.level), inline: true });
-      if (details.email_linked !== undefined && details.email_linked !== null) fields.push({ name: '✉️ Email Vinculado', value: details.email_linked ? 'Sim' : 'Não', inline: true });
-      if (details.phone_linked !== undefined && details.phone_linked !== null) fields.push({ name: '📱 Celular Vinculado', value: details.phone_linked ? 'Sim' : 'Não', inline: true });
-      if (details.email_domain !== undefined && details.email_domain !== null) fields.push({ name: '📧 Domínio do Email', value: `\`${details.email_domain}\``, inline: true });
-      if (details.origin !== undefined && details.origin !== null) fields.push({ name: '🔌 Origem da Conta', value: String(details.origin), inline: true });
-      if (details.country !== undefined && details.country !== null) fields.push({ name: '🌍 País', value: String(details.country), inline: true });
-      if (details.last_activity !== undefined && details.last_activity !== null) fields.push({ name: '🕒 Última Atividade', value: String(details.last_activity), inline: true });
+      if (details.email_linked !== undefined && details.email_linked !== null) fields.push({ name: '✉️ Email Trocável?', value: details.email_linked ? 'Sim' : 'Não', inline: true });
+      if (details.email_domain !== undefined && details.email_domain !== null) fields.push({ name: '📧 Domínio do Email', value: `\`${cap(String(details.email_domain))}\``, inline: true });
+      if (details.origin !== undefined && details.origin !== null) fields.push({ name: '🔌 Origem da Conta', value: `\`${cap(String(details.origin))}\``, inline: true });
+      if (details.country !== undefined && details.country !== null) fields.push({ name: '🌍 País', value: `\`${cap(String(details.country))}\``, inline: true });
     }
 
     if (actionResult?.success && actionResult.account_data) {
       const acc = actionResult.account_data;
       fields.push({
-        name: '🔑 Dados de Acesso Liberados (AutoBuy)',
-        value: `||**Login:** \`${acc.login || 'Disponível no painel'}\`\n**Senha:** \`${acc.password || 'Disponível no painel'}\`\n**Email:** \`${acc.email || 'Disponível no painel'}\`|| *(Oculte esta informação no canal público)*`,
+        name: '🔑 Dados de Acesso Separados',
+        value: `**L**: ||\`${acc.login || '...'}\`||\n**P**: ||\`${acc.password || '...'}\`||\n**E**: ||\`${acc.email || '...'}\`||`,
         inline: false
       });
     }
 
     fields.push({
-      name: '🚀 Ação rápida',
-      value: `🔗 [Abrir conta no LZT](https://lzt.market/${alert.item_id}/)\n📡 [Abrir filtro monitorado](${alert.url})`,
+      name: '📡 Monitor e Filtro Atual',
+      value: `[Abrir Filtro do Monitoramento](${alert.url})`,
       inline: false
     });
 
@@ -404,9 +401,13 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
       avatar_url: 'https://lzt.market/styles/lzt/logo.png',
       embeds: [
         {
-          title,
-          description,
+          title: alert.title,
+          url: `https://lzt.market/${alert.item_id}/`,
+          description: `🎮 Categoria: **${gameCategory}**\n${actionResult?.success ? '🟢 Compra garantida automaticamente!' : (actionResult ? '🔴 Compra falhou.' : '👀 Nova conta capturada no radar!')}`,
           color,
+          thumbnail: {
+            url: gIcon
+          },
           fields,
           footer: {
             text: 'deathStuffs MarketDesk • Radar LZT',
