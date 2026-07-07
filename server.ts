@@ -470,112 +470,74 @@ async function buyRealItem(itemId: string, price: number, monitorName: string): 
   try {
     addLog('info', monitorName, `[PRODUÇÃO] Reservando item ${itemId} por R$ ${price.toFixed(2)}...`);
 
-    // Passo 1: Reservar o item
-    const reserveRes = await fetch(`https://api.lzt.market/${itemId}/reserve`, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ price })
-    });
+    addLog('info', monitorName, `[PRODUÇÃO] Enviando comando de compra rápida de item ${itemId} por R$ ${price.toFixed(2)} (fast-buy)...`);
 
-    const reserveText = await reserveRes.text();
-    let reserveData: any = {};
-    try {
-      reserveData = JSON.parse(reserveText);
-    } catch (e) { }
-
-    if (reserveRes.status === 404 || (reserveData.error && reserveData.error.includes('not be found'))) {
-      addLog('warn', monitorName, `[PRODUÇÃO] Conta ${itemId} não existe mais no mercado ou foi removida.`);
-      return { success: false, message: 'Conta indisponível ou excluída do mercado.', invalidOrDeleted: true };
-    }
-
-    if (!reserveRes.ok || reserveData.error || reserveData.errors) {
-      const errMsg = reserveData.error || (reserveData.errors && reserveData.errors[0]) || 'Erro de reserva na API LZT';
-      return { success: false, message: `Reserva falhou: ${errMsg}` };
-    }
-
-    addLog('info', monitorName, `[PRODUÇÃO] Item ${itemId} reservado. Iniciando validação assíncrona (check-account)...`);
-
-    // Passo 2: Validar a conta (check-account) - LZT Processamento Assincrono
-    let checkSuccess = false;
-    let finalCheckError = '';
+    // Passo 1: Executar Fast-Buy com o preço especificado
+    let buySuccess = false;
+    let finalBuyError = '';
+    let confirmData: any = {};
 
     for (let i = 0; i < 45; i++) {
-      const checkRes = await fetch(`https://api.lzt.market/${itemId}/check-account`, {
+      const buyRes = await fetch(`https://api.lzt.market/${itemId}/fast-buy`, {
         method: 'POST',
         headers: {
           ...headers,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ buy_without_validation: 0, price: price })
       });
 
-      const checkText = await checkRes.text();
-      let checkData: any = {};
-      try { checkData = JSON.parse(checkText); } catch (e) { }
+      const buyText = await buyRes.text();
+      try { confirmData = JSON.parse(buyText); } catch (e) { }
 
-      const errStr = checkData.error || (checkData.errors && checkData.errors[0]);
+      // Mapeia caso de 404 "not found"
+      if (buyRes.status === 404 || (confirmData.error && confirmData.error.includes('not be found'))) {
+        addLog('warn', monitorName, `[PRODUÇÃO] Conta ${itemId} não existe mais no mercado ou foi removida.`);
+        return { success: false, message: 'Conta indisponível ou excluída do mercado (404).', invalidOrDeleted: true };
+      }
 
-      if (errStr === 'retry_request' || errStr === 'wait') {
+      const errStr = confirmData.error || (confirmData.errors && confirmData.errors[0]);
+
+      // Trata a validação assincrona do próprio LZT
+      if (errStr === 'retry_request' || errStr === 'wait' || confirmData.system_info) {
         if (i % 3 === 0) {
-          addLog('info', monitorName, `Aguardando servidor LZT validar a conta ${itemId} (Pode demorar)... [${i + 1}/45]`);
+          addLog('info', monitorName, `Aguardando servidor LZT validar a conta e concluir compra (Pode demorar)... [${i + 1}/45]`);
         }
-        await new Promise(r => setTimeout(r, 2000)); // Aguarda 2 segundos e tenta denovo
+        await new Promise(r => setTimeout(r, 2000)); // Espera 2 segs
         continue;
       }
 
-      if (checkRes.ok && !checkData.error && !checkData.errors) {
-        checkSuccess = true;
+      // Se conseguiu sem erros
+      if (buyRes.ok && !confirmData.error && !confirmData.errors) {
+        buySuccess = true;
         break;
       } else {
-        finalCheckError = errStr || 'Erro desconhecido';
+        finalBuyError = errStr || 'Erro desconhecido';
         break;
       }
     }
 
-    if (!checkSuccess) {
-      addLog('warn', monitorName, `[PRODUÇÃO] Conta ${itemId} reprovada/falhou após checagem pelo LZT: ${finalCheckError}`);
-      return { success: false, message: `Conta reprovada na checagem: ${finalCheckError}`, invalidOrDeleted: true };
+    // Fechamento das etapas
+    if (!buySuccess) {
+      addLog('warn', monitorName, `[PRODUÇÃO] Conta ${itemId} reprovada/falhou após tentativa de compra pelo LZT: ${finalBuyError}`);
+      return { success: false, message: `Conta reprovada/compra falhou: ${finalBuyError}`, invalidOrDeleted: true };
     }
 
-    addLog('success', monitorName, `[PRODUÇÃO] Conta ${itemId} 100% Validada pelo robô do LZT! Confirmando compra...`);
-
-    // Passo 3: Confirmar compra (confirm-buy)
-    const confirmRes = await fetch(`https://api.lzt.market/${itemId}/confirm-buy`, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json'
+    addLog('success', monitorName, `[PRODUÇÃO] COMPRA REALIZADA COM SUCESSO DO ITEM ${itemId}! 🎉`);
+    const accountData = confirmData.account || confirmData.item || {};
+    return {
+      success: true,
+      message: 'Compra efetuada com sucesso no mercado real!',
+      account_data: {
+        login: accountData.login || accountData.username || 'Ver no site da LZT',
+        password: accountData.password || 'Ver no site da LZT',
+        email: accountData.email || 'Ver no site da LZT',
+        cookie: accountData.cookie || '',
+        info: accountData.extra || 'Dados fornecidos pela API LZT.'
       }
-    });
-
-    const confirmText = await confirmRes.text();
-    let confirmData: any = {};
-    try {
-      confirmData = JSON.parse(confirmText);
-    } catch (e) { }
-
-    if (confirmRes.ok && !confirmData.error && !confirmData.errors) {
-      addLog('success', monitorName, `[PRODUÇÃO] COMPRA REALIZADA COM SUCESSO DO ITEM ${itemId}!`);
-      const accountData = confirmData.account || confirmData.item || {};
-      return {
-        success: true,
-        message: 'Compra efetuada com sucesso no mercado real!',
-        account_data: {
-          login: accountData.login || accountData.username || 'Ver no site da LZT',
-          password: accountData.password || 'Ver no site da LZT',
-          email: accountData.email || 'Ver no site da LZT',
-          cookie: accountData.cookie || '',
-          info: accountData.extra || 'Dados fornecidos pela API LZT.'
-        }
-      };
-    } else {
-      const errMsg = confirmData.error || (confirmData.errors && confirmData.errors[0]) || 'Erro na confirmação da API LZT';
-      return { success: false, message: `Confirmação de compra falhou: ${errMsg}` };
-    }
+    };
   } catch (error: any) {
-    return { success: false, message: `Erro de conexão na compra: ${error.message}` };
+    return { success: false, message: `Erro fatal de conexão: ${error.message}`, invalidOrDeleted: true }; // Adotado invalidOrDeleted true no catch para evitar freeze global no block lock
   }
 }
 // Loop de checagem do Monitor/Regra em Produção Real
