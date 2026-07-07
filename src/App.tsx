@@ -913,22 +913,22 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="flex gap-2 bg-neutral-900 border border-neutral-800 p-1 rounded-xl mx-auto md:mx-0 self-end mt-4 md:mt-0">
+                <div className="flex gap-1.5 bg-neutral-950 border border-neutral-800 p-1 rounded-lg mx-auto md:mx-0 self-end mt-4 md:mt-0">
                   <button
                     onClick={() => setRulesFilter('all')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   >
                     Todos
                   </button>
                   <button
                     onClick={() => setRulesFilter('active')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'active' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   >
                     Ativos
                   </button>
                   <button
                     onClick={() => setRulesFilter('paused')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`px-3 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   >
                     Pausados
                   </button>
@@ -1034,54 +1034,65 @@ export default function App() {
                         )}
 
                         {/* Botões de Ação na base do card */}
-                        <div className="flex items-center justify-between border-t border-neutral-800/60 pt-4 mt-2">
+                        <div className="flex items-center justify-between border-t border-neutral-800/60 pt-3 mt-2">
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
-                              className={`p-2 rounded-xl transition-all border cursor-pointer ${rule.enabled
+                              className={`p-1.5 rounded-lg transition-all border cursor-pointer ${rule.enabled
                                 ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                                 : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                                 }`}
                               title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
                             >
-                              {rule.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                              {rule.enabled ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                             </button>
 
                             <button
                               onClick={() => handleCheckRuleNow(rule.id, rule.name)}
                               disabled={!rule.enabled}
-                              className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                               title="Disparar Checagem Imediata"
                             >
-                              <RefreshCw className="w-4 h-4" />
+                              <RefreshCw className="w-3.5 h-3.5" />
                             </button>
 
                             <a
                               href={rule.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all"
+                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all block"
                               title="Abrir URL filtrada no LZT Market"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           </div>
 
                           <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => handleOpenEdit(rule)}
-                              className="p-2 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-all cursor-pointer"
+                              onClick={() => {
+                                setEditingRuleId(rule.id);
+                                setFormData({
+                                  name: rule.name,
+                                  url: rule.url,
+                                  category: rule.category,
+                                  mode: rule.mode,
+                                  max_price: rule.max_price,
+                                  interval_seconds: rule.interval_seconds,
+                                  max_purchases: rule.max_purchases || 3
+                                });
+                                setIsModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer"
                               title="Editar Regra"
                             >
-                              <Settings className="w-4 h-4" />
+                              <Settings className="w-3.5 h-3.5" />
                             </button>
-
                             <button
                               onClick={() => handleDeleteRule(rule.id, rule.name)}
-                              className="p-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
+                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all cursor-pointer"
                               title="Deletar Regra"
                             >
-                              <Trash className="w-4 h-4" />
+                              <Trash className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
