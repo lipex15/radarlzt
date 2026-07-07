@@ -1034,40 +1034,44 @@ export default function App() {
                         )}
 
                         {/* Botões de Ação na base do card */}
-                        <div className="flex items-center justify-between border-t border-neutral-800/60 pt-3 mt-2">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between border-t border-neutral-800 pt-3 mt-2">
+                          <div className="flex items-center space-x-1.5">
                             <button
                               onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
-                              className={`p-1.5 rounded-lg transition-all border cursor-pointer ${rule.enabled
-                                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer w-24 ${rule.enabled
+                                  ? 'text-neutral-400 hover:bg-red-500/10 hover:text-red-400'
+                                  : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                                 }`}
                               title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
                             >
-                              {rule.enabled ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                              {rule.enabled ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Ativar</>}
                             </button>
+
+                            <div className="h-4 w-px bg-neutral-800 mx-1"></div>
 
                             <button
                               onClick={() => handleCheckRuleNow(rule.id, rule.name)}
                               disabled={!rule.enabled}
-                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                              title="Disparar Checagem Imediata"
+                              className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
+                              title="Checagem Imediata"
                             >
-                              <RefreshCw className="w-3.5 h-3.5" />
+                              <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+                              <span className="hidden xl:inline">Checar</span>
                             </button>
 
                             <a
                               href={rule.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:border-neutral-700 transition-all block"
+                              className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors block"
                               title="Abrir URL filtrada no LZT Market"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
+                              <span className="hidden xl:inline">Link</span>
                             </a>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center space-x-1">
                             <button
                               onClick={() => {
                                 setEditingRuleId(rule.id);
@@ -1082,14 +1086,14 @@ export default function App() {
                                 });
                                 setIsModalOpen(true);
                               }}
-                              className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer"
+                              className="p-1.5 rounded-md text-neutral-500 hover:text-blue-400 hover:bg-neutral-800 transition-colors cursor-pointer"
                               title="Editar Regra"
                             >
                               <Settings className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDeleteRule(rule.id, rule.name)}
-                              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all cursor-pointer"
+                              className="p-1.5 rounded-md text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors cursor-pointer"
                               title="Deletar Regra"
                             >
                               <Trash className="w-3.5 h-3.5" />
