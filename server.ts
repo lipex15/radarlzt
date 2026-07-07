@@ -491,15 +491,15 @@ async function buyRealItem(itemId: string, price: number, monitorName: string): 
       try { confirmData = JSON.parse(buyText); } catch (e) { }
 
       // Mapeia caso de 404 "not found"
-      if (buyRes.status === 404 || (confirmData.error && confirmData.error.includes('not be found'))) {
+      if (buyRes.status === 404 || (confirmData.error && String(confirmData.error).includes('not be found'))) {
         addLog('warn', monitorName, `[PRODUÇÃO] Conta ${itemId} não existe mais no mercado ou foi removida.`);
         return { success: false, message: 'Conta indisponível ou excluída do mercado (404).', invalidOrDeleted: true };
       }
 
-      const errStr = confirmData.error || (confirmData.errors && confirmData.errors[0]);
+      const errStr = confirmData.error || (confirmData.errors && confirmData.errors[0]) || confirmData.error_description || null;
 
       // Trata a validação assincrona do próprio LZT
-      if (errStr === 'retry_request' || errStr === 'wait' || confirmData.system_info) {
+      if (errStr === 'retry_request' || errStr === 'wait') {
         if (i % 3 === 0) {
           addLog('info', monitorName, `Aguardando servidor LZT validar a conta e concluir compra (Pode demorar)... [${i + 1}/45]`);
         }
@@ -512,7 +512,8 @@ async function buyRealItem(itemId: string, price: number, monitorName: string): 
         buySuccess = true;
         break;
       } else {
-        finalBuyError = errStr || 'Erro desconhecido';
+        console.log(`[DEBUG FAST-BUY FALHA] HTTP: ${buyRes.status} | BODY: ${buyText}`);
+        finalBuyError = errStr || (confirmData.message || buyText.substring(0, 50)) || 'Erro desconhecido/vazio';
         break;
       }
     }
