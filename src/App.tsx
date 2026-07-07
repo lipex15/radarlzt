@@ -875,45 +875,49 @@ export default function App() {
                   <p className="text-xs text-neutral-400">Radares ativos de AutoBuy e apenas monitoramento do mercado LZT</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  {/* Filtro: Pílula Estilo Apple/Vercel (Segmented Control) */}
-                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md self-start sm:self-auto overflow-x-auto max-w-full">
+                <div className="flex flex-col xl:flex-row xl:items-center gap-3 w-full">
+                  {/* Filtro Principal de Estado */}
+                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md shrink-0 w-fit">
                     <button
                       onClick={() => setRulesFilter('all')}
-                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Todos
                     </button>
                     <button
                       onClick={() => setRulesFilter('active')}
-                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'active' ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'active' ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Ativos
                     </button>
                     <button
                       onClick={() => setRulesFilter('paused')}
-                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Pausados
                     </button>
+                  </div>
+
+                  {/* Filtro Secundário de Tipo */}
+                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md shrink-0 w-fit">
                     <button
                       onClick={() => setRulesFilter('autobuy')}
-                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'autobuy' ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'autobuy' ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
-                      C/ AutoBuy
+                      Apenas AutoBuy
                     </button>
                     <button
                       onClick={() => setRulesFilter('monitor')}
-                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'monitor' ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'monitor' ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
-                      Monitorar
+                      Apenas Monitor
                     </button>
                   </div>
 
-                  <div className="w-px h-5 bg-neutral-800 hidden sm:block"></div>
+                  <div className="w-px h-5 bg-neutral-800 hidden xl:block"></div>
 
                   {/* Grupo de Ações Globais */}
-                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-1.5 xl:ml-auto">
                     <button
                       onClick={() => handleToggleAllRules(true)}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
@@ -973,7 +977,7 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
                   {rules
                     .filter((rule) => {
                       if (rulesFilter === 'active') return rule.enabled;
