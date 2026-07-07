@@ -136,7 +136,7 @@ export default function App() {
   };
 
   // State para o Filtro de Regras
-  const [rulesFilter, setRulesFilter] = useState<'all' | 'active' | 'paused'>(() => {
+  const [rulesFilter, setRulesFilter] = useState<'all' | 'active' | 'paused' | 'autobuy' | 'monitor'>(() => {
     return (localStorage.getItem('lzt_rulesFilter') as any) || 'all';
   });
 
@@ -877,24 +877,36 @@ export default function App() {
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {/* Filtro: Pílula Estilo Apple/Vercel (Segmented Control) */}
-                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md self-start sm:self-auto">
+                  <div className="flex p-0.5 bg-neutral-950 border border-neutral-800/80 rounded-md self-start sm:self-auto overflow-x-auto max-w-full">
                     <button
                       onClick={() => setRulesFilter('all')}
-                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'all' ? 'bg-neutral-800 text-neutral-100 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Todos
                     </button>
                     <button
                       onClick={() => setRulesFilter('active')}
-                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'active' ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'active' ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Ativos
                     </button>
                     <button
                       onClick={() => setRulesFilter('paused')}
-                      className={`px-3 py-1 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'paused' ? 'bg-neutral-800 text-neutral-300 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                       Pausados
+                    </button>
+                    <button
+                      onClick={() => setRulesFilter('autobuy')}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'autobuy' ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                      C/ AutoBuy
+                    </button>
+                    <button
+                      onClick={() => setRulesFilter('monitor')}
+                      className={`px-3 py-1.5 rounded-[4px] text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${rulesFilter === 'monitor' ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                      Monitorar
                     </button>
                   </div>
 
@@ -961,17 +973,19 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {rules
                     .filter((rule) => {
                       if (rulesFilter === 'active') return rule.enabled;
                       if (rulesFilter === 'paused') return !rule.enabled;
+                      if (rulesFilter === 'autobuy') return rule.mode === 'autobuy';
+                      if (rulesFilter === 'monitor') return rule.mode === 'monitor';
                       return true;
                     })
                     .map((rule) => (
                       <div
                         key={rule.id}
-                        className="bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-neutral-700 transition-all relative overflow-hidden"
+                        className="bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-neutral-700 transition-all relative overflow-hidden flex flex-col"
                       >
                         {/* Indicador superior de status */}
                         <div className="flex items-start justify-between gap-4">
@@ -1012,101 +1026,104 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Resumo Técnico dos Filtros de URL */}
+                        {/* Collapsed Container: Esconde todo o conteúdo técnico e botões se a aba estiver fechada */}
                         {!collapsedRules[rule.id] && (
-                          <div className="bg-neutral-950 border border-neutral-800/50 p-3 rounded-xl space-y-2 my-4 text-xs animate-fade-in">
-                            <div className="flex justify-between items-center text-neutral-400">
-                              <span>Preço Teto:</span>
-                              <span className="font-bold text-neutral-200">R$ {rule.max_price.toFixed(2)} BRL</span>
-                            </div>
-                            <div className="flex justify-between items-center text-neutral-450 text-neutral-450 border-neutral-800/50">
-                              <span>Intervalo de Varredura:</span>
-                              <span className="font-mono text-neutral-300">{rule.interval_seconds}s</span>
-                            </div>
-                            {rule.mode === 'autobuy' && (
-                              <div className="flex justify-between items-center text-neutral-450 border-t border-neutral-905 pt-2">
-                                <span>Limite de Compras:</span>
-                                <span className="font-mono text-amber-400 font-bold">
-                                  {rule.purchases_made} de {rule.max_purchases} feitas
+                          <div className="animate-fade-in flex flex-col mt-4">
+                            {/* Resumo Técnico dos Filtros de URL */}
+                            <div className="bg-neutral-950 border border-neutral-800/50 p-3 rounded-xl space-y-2 text-xs">
+                              <div className="flex justify-between items-center text-neutral-400">
+                                <span>Preço Teto:</span>
+                                <span className="font-bold text-neutral-200">R$ {rule.max_price.toFixed(2)} BRL</span>
+                              </div>
+                              <div className="flex justify-between items-center text-neutral-450 border-neutral-800/50">
+                                <span>Intervalo de Varredura:</span>
+                                <span className="font-mono text-neutral-300">{rule.interval_seconds}s</span>
+                              </div>
+                              {rule.mode === 'autobuy' && (
+                                <div className="flex justify-between items-center text-neutral-450 border-t border-neutral-905 pt-2 mt-2">
+                                  <span>Limite de Compras:</span>
+                                  <span className="font-mono text-amber-400 font-bold">
+                                    {rule.purchases_made} de {rule.max_purchases} feitas
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex justify-between items-center text-neutral-500 border-t border-neutral-905 pt-2 mt-2">
+                                <span>Menor preço visto:</span>
+                                <span className="font-mono text-neutral-300 font-semibold">
+                                  {rule.last_lowest_price ? `R$ ${rule.last_lowest_price.toFixed(2)}` : 'Sem registros'}
                                 </span>
                               </div>
-                            )}
-                            <div className="flex justify-between items-center text-neutral-500 border-t border-neutral-905 pt-2">
-                              <span>Menor preço visto:</span>
-                              <span className="font-mono text-neutral-300 font-semibold">
-                                {rule.last_lowest_price ? `R$ ${rule.last_lowest_price.toFixed(2)}` : 'Sem registros'}
-                              </span>
+                            </div>
+
+                            {/* Botões de Ação na base do card */}
+                            <div className="flex items-center justify-between border-t border-neutral-800/60 pt-3 mt-4">
+                              <div className="flex items-center space-x-1.5">
+                                <button
+                                  onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
+                                  className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer w-[86px] ${rule.enabled
+                                    ? 'text-neutral-400 hover:bg-red-500/10 hover:text-red-400'
+                                    : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                    }`}
+                                  title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
+                                >
+                                  {rule.enabled ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Ativar</>}
+                                </button>
+
+                                <div className="h-4 w-px bg-neutral-800 mx-1"></div>
+
+                                <button
+                                  onClick={() => handleCheckRuleNow(rule.id, rule.name)}
+                                  disabled={!rule.enabled}
+                                  className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
+                                  title="Checagem Imediata"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+                                  <span className="hidden xl:inline">Checar</span>
+                                </button>
+
+                                <a
+                                  href={rule.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors block"
+                                  title="Abrir URL filtrada no LZT Market"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Link</span>
+                                </a>
+                              </div>
+
+                              <div className="flex items-center space-x-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingRuleId(rule.id);
+                                    setFormData({
+                                      name: rule.name,
+                                      url: rule.url,
+                                      category: rule.category,
+                                      mode: rule.mode,
+                                      max_price: rule.max_price,
+                                      interval_seconds: rule.interval_seconds,
+                                      max_purchases: rule.max_purchases || 3
+                                    });
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="p-1.5 rounded-md text-neutral-500 hover:text-blue-400 hover:bg-neutral-800 transition-colors cursor-pointer"
+                                  title="Editar Regra"
+                                >
+                                  <Settings className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteRule(rule.id, rule.name)}
+                                  className="p-1.5 rounded-md text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors cursor-pointer"
+                                  title="Deletar Regra"
+                                >
+                                  <Trash className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
-
-                        {/* Botões de Ação na base do card */}
-                        <div className="flex items-center justify-between border-t border-neutral-800 pt-3 mt-2">
-                          <div className="flex items-center space-x-1.5">
-                            <button
-                              onClick={() => handleToggleRule(rule.id, rule.name, rule.enabled)}
-                              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer w-24 ${rule.enabled
-                                ? 'text-neutral-400 hover:bg-red-500/10 hover:text-red-400'
-                                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                }`}
-                              title={rule.enabled ? 'Pausar Monitoramento' : 'Ativar Monitoramento'}
-                            >
-                              {rule.enabled ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Ativar</>}
-                            </button>
-
-                            <div className="h-4 w-px bg-neutral-800 mx-1"></div>
-
-                            <button
-                              onClick={() => handleCheckRuleNow(rule.id, rule.name)}
-                              disabled={!rule.enabled}
-                              className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
-                              title="Checagem Imediata"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-                              <span className="hidden xl:inline">Checar</span>
-                            </button>
-
-                            <a
-                              href={rule.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1.5 p-1.5 rounded-md text-[11px] font-medium text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors block"
-                              title="Abrir URL filtrada no LZT Market"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span className="hidden xl:inline">Link</span>
-                            </a>
-                          </div>
-
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => {
-                                setEditingRuleId(rule.id);
-                                setFormData({
-                                  name: rule.name,
-                                  url: rule.url,
-                                  category: rule.category,
-                                  mode: rule.mode,
-                                  max_price: rule.max_price,
-                                  interval_seconds: rule.interval_seconds,
-                                  max_purchases: rule.max_purchases || 3
-                                });
-                                setIsModalOpen(true);
-                              }}
-                              className="p-1.5 rounded-md text-neutral-500 hover:text-blue-400 hover:bg-neutral-800 transition-colors cursor-pointer"
-                              title="Editar Regra"
-                            >
-                              <Settings className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRule(rule.id, rule.name)}
-                              className="p-1.5 rounded-md text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors cursor-pointer"
-                              title="Deletar Regra"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
 
                       </div>
                     ))}
