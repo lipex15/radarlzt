@@ -297,27 +297,12 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
       statusText = 'Vendido / Outro Bot';
     }
 
-    if (actionResult) {
-      if (actionResult.success) {
-        color = 3066993; // Verde
-        title = '💰 Auto-Buy Realizado com Sucesso!';
-        statusEmoji = '⚡';
-        statusText = 'Comprado pelo AutoBuy';
-      } else {
-        color = 15158332; // Vermelho
-        title = '⚠️ Auto-Buy - Falha de Compra';
-        statusEmoji = '❌';
-        statusText = `Falhou: ${actionResult.msg}`;
-      }
-    }
-
-    // Tentar detectar a categoria de jogo de forma elegante para o cabeçalho (LOL, Valorant, CS2, etc.)
+    // Tentar detectar a categoria de jogo de forma elegante (LOL, Valorant, CS2, etc.)
     let gameCategory = alert.monitor_name.toUpperCase();
     const urlLower = alert.url.toLowerCase();
 
     // Escolhe a thumbnail dinamicamente com base no jogo para leitura rápida 10x
     let gIcon = 'https://lzt.market/styles/lzt/logo.png';
-    let gColor = color;
 
     if (urlLower.includes('riot') || urlLower.includes('valorant')) {
       gameCategory = 'Valorant';
@@ -333,12 +318,33 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
       gIcon = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png';
     }
 
+    let embedTitle = `👀 Conta Detectada — ${gameCategory}`;
+    let embedDescription = `**Anúncio:** \`${alert.title || 'Sem título'}\`\n**Preço:** \`R$ ${alert.price.toFixed(2)}\``;
+
+    if (actionResult) {
+      if (actionResult.success) {
+        color = 3066993; // Verde
+        embedTitle = '💰 Auto-Buy Realizado com Sucesso!';
+        statusEmoji = '⚡';
+        statusText = 'Comprado pelo AutoBuy';
+        embedDescription += `\n\n🟢 **Compra garantida automaticamente via AutoBuy!**`;
+      } else {
+        color = 15158332; // Vermelho
+        embedTitle = '⚠️ Auto-Buy - Falha de Compra';
+        statusEmoji = '❌';
+        statusText = `Falhou: ${actionResult.msg}`;
+        embedDescription += `\n\n🔴 **Falha no AutoBuy:** \`${actionResult.msg}\``;
+      }
+    } else {
+      embedDescription += `\n\n👀 **Nova conta disponível no radar de monitoramento!**`;
+    }
+
     const timestampUnix = Math.floor(new Date(alert.found_at).getTime() / 1000);
 
     const fields: any[] = [
       { name: '💰 Preço', value: `\`R$ ${alert.price.toFixed(2)}\``, inline: true },
       { name: '✅ Status', value: `\`${statusText}\``, inline: true },
-      { name: '🕒 Encontrado', value: `<t:${timestampUnix}:R>`, inline: true }
+      { name: '🕒 Capturado', value: `<t:${timestampUnix}:R>`, inline: true }
     ];
 
     if (alert.item_details) {
@@ -384,15 +390,15 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
     if (actionResult?.success && actionResult.account_data) {
       const acc = actionResult.account_data;
       fields.push({
-        name: '🔑 Dados de Acesso Separados',
-        value: `**L**: ||\`${acc.login || '...'}\`||\n**P**: ||\`${acc.password || '...'}\`||\n**E**: ||\`${acc.email || '...'}\`||`,
+        name: '🔑 Dados de Acesso',
+        value: `👤 **Login:** ||\`${acc.login || '...'}\`||\n🔑 **Senha:** ||\`${acc.password || '...'}\`||\n✉️ **Email:** ||\`${acc.email || '...'}\`||`,
         inline: false
       });
     }
 
     fields.push({
-      name: '📡 Monitor e Filtro Atual',
-      value: `[Abrir Filtro do Monitoramento](${alert.url})`,
+      name: '🔗 Links Úteis',
+      value: `⚡ **[Clique aqui para abrir a conta no LZT Market](https://lzt.market/${alert.item_id}/)**\n📡 **[Clique aqui para ver o filtro monitorado](${alert.url})**`,
       inline: false
     });
 
@@ -401,9 +407,8 @@ async function sendDiscordWebhook(alert: Alert, actionResult?: { success: boolea
       avatar_url: 'https://lzt.market/styles/lzt/logo.png',
       embeds: [
         {
-          title: alert.title,
-          url: `https://lzt.market/${alert.item_id}/`,
-          description: `🎮 Categoria: **${gameCategory}**\n${actionResult?.success ? '🟢 Compra garantida automaticamente!' : (actionResult ? '🔴 Compra falhou.' : '👀 Nova conta capturada no radar!')}`,
+          title: embedTitle,
+          description: embedDescription,
           color,
           thumbnail: {
             url: gIcon
